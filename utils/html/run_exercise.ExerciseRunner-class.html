@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>run_exercise.ExerciseRunner</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="run_exercise-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="run_exercise-module.html">Module&nbsp;run_exercise</a> ::
+        Class&nbsp;ExerciseRunner
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="run_exercise.ExerciseRunner-class.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS DESCRIPTION ==================== -->
+<h1 class="epydoc">Class ExerciseRunner</h1><p class="nomargin-top"><span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner">source&nbsp;code</a></span></p>
+<pre class="literalblock">
+
+Attributes:
+    log_dir  : string   // directory for mininet log files
+    pcap_dir : string   // directory for mininet switch pcap files
+    quiet    : bool     // determines if we print logger messages
+
+    hosts    : list&lt;string&gt;       // list of mininet host names
+    switches : dict&lt;string, dict&gt; // mininet host names and their associated properties
+    links    : list&lt;dict&gt;         // list of mininet link properties
+
+    switch_json : string // json of the compiled p4 example
+    bmv2_exe    : string // name or path of the p4 switch binary
+
+    topo : Topo object   // The mininet topology instance
+    net : Mininet object // The mininet instance
+
+</pre>
+
+<!-- ==================== INSTANCE METHODS ==================== -->
+<a name="section-InstanceMethods"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Methods</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceMethods"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="logger"></a><span class="summary-sig-name">logger</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">*items</span>)</span></td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.logger">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="formatLatency"></a><span class="summary-sig-name">formatLatency</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">l</span>)</span><br />
+      Helper method for parsing link latencies from the topology json.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.formatLatency">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="run_exercise.ExerciseRunner-class.html#__init__" class="summary-sig-name">__init__</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">topo_file</span>,
+        <span class="summary-sig-arg">log_dir</span>,
+        <span class="summary-sig-arg">pcap_dir</span>,
+        <span class="summary-sig-arg">switch_json</span>,
+        <span class="summary-sig-arg">bmv2_exe</span>=<span class="summary-sig-default">'simple_switch'</span>,
+        <span class="summary-sig-arg">quiet</span>=<span class="summary-sig-default">False</span>)</span><br />
+      Initializes some attributes and reads the topology json.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.__init__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="run_exercise.ExerciseRunner-class.html#run_exercise" class="summary-sig-name">run_exercise</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      Sets up the mininet instance, programs the switches, and starts the 
+      mininet CLI.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.run_exercise">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="parse_links"></a><span class="summary-sig-name">parse_links</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">unparsed_links</span>)</span><br />
+      Given a list of links descriptions of the form [node1, node2, 
+      latency, bandwidth] with the latency and bandwidth being optional, 
+      parses these descriptions into dictionaries and store them as 
+      self.links</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.parse_links">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="run_exercise.ExerciseRunner-class.html#create_network" class="summary-sig-name">create_network</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      Create the mininet network object, and store it as self.net.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.create_network">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="program_switch_p4runtime"></a><span class="summary-sig-name">program_switch_p4runtime</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">sw_name</span>,
+        <span class="summary-sig-arg">sw_dict</span>)</span><br />
+      This method will use P4Runtime to program the switch using the 
+      content of the runtime JSON file as input.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.program_switch_p4runtime">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="program_switch_cli"></a><span class="summary-sig-name">program_switch_cli</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">sw_name</span>,
+        <span class="summary-sig-arg">sw_dict</span>)</span><br />
+      This method will start up the CLI and use the contents of the command
+      files as input.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.program_switch_cli">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="program_switches"></a><span class="summary-sig-name">program_switches</span>(<span class="summary-sig-arg">self</span>)</span><br />
+      This method will program each switch using the BMv2 CLI and/or 
+      P4Runtime, depending if any command or runtime JSON files were 
+      provided for the switches.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.program_switches">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="run_exercise.ExerciseRunner-class.html#program_hosts" class="summary-sig-name">program_hosts</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      Adds static ARP entries and default routes to each mininet host.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.program_hosts">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="run_exercise.ExerciseRunner-class.html#do_net_cli" class="summary-sig-name">do_net_cli</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      Starts up the mininet CLI and prints some helpful output.</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.do_net_cli">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== METHOD DETAILS ==================== -->
+<a name="section-MethodDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Method Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-MethodDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="__init__"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__init__</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">topo_file</span>,
+        <span class="sig-arg">log_dir</span>,
+        <span class="sig-arg">pcap_dir</span>,
+        <span class="sig-arg">switch_json</span>,
+        <span class="sig-arg">bmv2_exe</span>=<span class="sig-default">'simple_switch'</span>,
+        <span class="sig-arg">quiet</span>=<span class="sig-default">False</span>)</span>
+    <br /><em class="fname">(Constructor)</em>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.__init__">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+Initializes some attributes and reads the topology json. Does not
+actually run the exercise. Use run_exercise() for that.
+
+Arguments:
+    topo_file : string    // A json file which describes the exercise's
+                             mininet topology.
+    log_dir  : string     // Path to a directory for storing exercise logs
+    pcap_dir : string     // Ditto, but for mininet switch pcap files
+    switch_json : string  // Path to a compiled p4 json for bmv2
+    bmv2_exe    : string  // Path to the p4 behavioral binary
+    quiet : bool          // Enable/disable script debug messages
+
+</pre>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="run_exercise"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">run_exercise</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.run_exercise">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Sets up the mininet instance, programs the switches, and starts the 
+  mininet CLI. This is the main method to run after initializing the 
+  object.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="create_network"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">create_network</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.create_network">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Create the mininet network object, and store it as self.net.</p>
+  <p>Side effects:</p>
+  <ul>
+    <li>
+      Mininet topology instance stored as self.topo
+    </li>
+    <li>
+      Mininet instance stored as self.net
+    </li>
+  </ul>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="program_hosts"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">program_hosts</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.program_hosts">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Adds static ARP entries and default routes to each mininet host.</p>
+  <p>Assumes:</p>
+  <ul>
+    <li>
+      A mininet instance is stored as self.net and self.net.start() has 
+      been called.
+    </li>
+  </ul>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="do_net_cli"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">do_net_cli</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="run_exercise-pysrc.html#ExerciseRunner.do_net_cli">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Starts up the mininet CLI and prints some helpful output.</p>
+  <p>Assumes:</p>
+  <ul>
+    <li>
+      A mininet instance is stored as self.net and self.net.start() has 
+      been called.
+    </li>
+  </ul>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="run_exercise-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Tue Oct 30 16:27:05 2018
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>
