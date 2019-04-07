@@ -16,21 +16,21 @@ def get_if():
             iface = i
             break;
     if not iface:
-        print("Cannot find eth0 interface")
+        print 'Cannot find eth0 interface'
         exit(1)
     return iface
 
 def main():
     
     if len(sys.argv)<3:
-        print("pass 1 argument: <destination>")
+        print 'pass 2 argument: <destination> "<file.pcap>"'
         exit(1)
 
     addr = socket.gethostbyname(sys.argv[1])
     iface = get_if()
 
 
-    pcap = rdpcap("../dns0313_2_onlyDNS.pcapng")
+    pcap = rdpcap(sys.argv[2])
 
     q_pkt = []
     for pkt in pcap:
