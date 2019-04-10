@@ -9,8 +9,7 @@
     ```
     mininet> xterm h1 h2 h3
     ```
-    ![](https://i.imgur.com/Q5ix0US.png)
-
+   
   * 以 h3 為 dns server，在 h3 的 xterm 輸入
     ```
     python dns_server.py dns0313_2_onlyDNS.pcapng
