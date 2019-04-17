@@ -36,7 +36,14 @@ header ipv4_t {
 }
 
 header ipv6_t {
-
+    bit<4>    version;
+    bit<8>    trafficClass;
+    bit<20>   flowLabel;
+    bit<16>   payloadLen;
+    bit<8>    nextHeader;
+    bit<8>    hlim;
+    ip6Addr_t srcAddr;
+    ip6Addr_t dstAddr;
 }
 
 header udp_t {
@@ -139,16 +146,33 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 
 control MyIngress(inout headers hdr,
                   inout metadata meta,
-                  inout standard_metadata_t standard_metadata) {
+                  inout standard_metadata_t standard_metadata,
+		  in psa_ingress_input_metadata_t istd,
+		  out psa_ingress_output_metadata_t ostd) {
+
+    Register<bit<32>, bit<7>>(64) reg_ingress;
+
     action drop() {
         mark_to_drop();
     }
+
+    /*action update_count (inout PacketByteCountState_t s,
+			 in bit<16> ip_length_bytes)
+    {
+	s[PACKET_COUNT_RANGE] = s[PACKET_COUNT_RANGE] + 1;
+	s[BYTE_COUNT_RANGE] = (s[BYTE_COUNT_RANGE] + (bit<BYTE_COUNT_WIDTH>) ip_length_bytes)
+    }*/
     
-    action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
+    action dns_forward(macAddr_t dstAddr, egressSpec_t port) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+	if (hdr.ethernet.etherType == TYPE_IPV4)
+            hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+	else if (hdr.ethernet.etherType == TYPE_IPV6)
+	    hdr.ipv6.hlim = hdr.ipv6.hlim - 1;
+	else
+	    NoAction;
     }
     
     table ipv4_lpm {
@@ -156,20 +180,45 @@ control MyIngress(inout headers hdr,
             hdr.ipv4.dstAddr: lpm;
         }
         actions = {
-            ipv4_forward;
+            dns_forward;
             drop;
             NoAction;
         }
         size = 1024;
         default_action = drop();
     }
+
+    table ipv6_lpm {
+	key = {
+	    hdr.ipv6.dstAddr: lpm;
+	}
+	actions = {
+	    dns_forward;
+	    drop;
+	    NoAction;
+	}
+	size = 1024;
+	default_action = drop();
+    }
     
     apply {
+	bit<32> tmp;
         if (hdr.ipv4.isValid()) {
+	    tmp = reg_ingress.read((bit<7>) istd.ingress_port[5:0]);
+	    tmp = tmp + 0xdeadbeef;
+	    reg_ingress.write((bit<7>) istd.ingress_port[5:0], tmp);
             ipv4_lpm.apply();
         }
+	else if (hdr.ipv6.isValid()) {
+	    tmp = reg_ingress.read((bit<7>) istd.ingress_port[5:0]);
+	    tmp = tmp + 0xdeadbeef;
+	    reg_ingress.write((bit<7>) istd.ingress_port[5:0], tmp);
+	    ipv6_lpm.apply();
+	}
+	ostd.egress_port = 0;
     }
 }
+
 
 /*************************************************************************
 ****************  E G R E S S   P R O C E S S I N G   *******************
