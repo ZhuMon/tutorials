@@ -3,6 +3,8 @@
 #include <v1model.p4>
 
 const bit<16> TYPE_IPV4 = 0x800;
+const bit<16> TYPE_IPV6 = 0x86dd;
+const bit<8>  TYPE_UDP  = 0x17;
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
@@ -33,6 +35,38 @@ header ipv4_t {
     ip4Addr_t dstAddr;
 }
 
+header ipv6_t {
+
+}
+
+header udp_t {
+    bit<16>   sport;
+    bit<16>   dport;
+    bit<16>   len;
+    bit<16>   chksum;
+}
+
+header dns_t {
+    bit<16>   id;
+    bit<1>    qr;
+    bit<4>    opcode;
+    bit<1>    aa;
+    bit<1>    tc;
+    bit<1>    rd;
+    bit<1>    ra;
+    bit<1>    z;
+    bit<1>    ad;
+    bit<1>    cd;
+    bit<4>    rcode;
+    bit<16>   qdcount;
+    bit<16>   ancount;
+    bit<16>   nscount;
+    bit<16>   arcount;
+    bit<qdcount>  qd;
+    bit<ancount>  an;
+    bit<nscount>  ns;
+    bit<arcount>  ar;
+}
 struct metadata {
     /* empty */
 }
@@ -40,6 +74,9 @@ struct metadata {
 struct headers {
     ethernet_t   ethernet;
     ipv4_t       ipv4;
+    ipv6_t       ipv6;
+    udp_t        udp;
+    dns_t        dns;
 }
 
 /*************************************************************************
@@ -59,15 +96,32 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.ethernet);
         transition select(hdr.ethernet.etherType) {
             TYPE_IPV4: parse_ipv4;
+            TYPE_IPV6: parse_ipv6;
             default: accept;
         }
     }
 
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
-        transition accept;
+        transition select(hdr.ipv4.protocol) {
+            TYPE_UDP: parse_udp;
+            default: accept;
+        }
+    }
+    
+    state parse_ipv6 {
+        packet.extract(hdr.ipv6);
+        transition select(hdr.ipv6.protocol) {
+            TYPE_UDP: parse_udp;
+            default: accept;
+        }
     }
 
+    state parse_udp {
+        packet.extract(hdr.udp);
+        packet.extract(hdr.dns);
+        transition accept;
+    }
 }
 
 /*************************************************************************
