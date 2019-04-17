@@ -1,10 +1,12 @@
 /* -*- P4_16 -*- */
 #include <core.p4>
 #include <v1model.p4>
+//#include <psa.p4>
 
 const bit<16> TYPE_IPV4 = 0x800;
 const bit<16> TYPE_IPV6 = 0x86dd;
 const bit<8>  TYPE_UDP  = 0x17;
+const bit<32> NUM = 65536;
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
@@ -13,6 +15,7 @@ const bit<8>  TYPE_UDP  = 0x17;
 typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
+typedef bit<64> ip6Addr_t;
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -35,7 +38,7 @@ header ipv4_t {
     ip4Addr_t dstAddr;
 }
 
-header ipv6_t {
+/*header ipv6_t {
     bit<4>    version;
     bit<8>    trafficClass;
     bit<20>   flowLabel;
@@ -44,7 +47,7 @@ header ipv6_t {
     bit<8>    hlim;
     ip6Addr_t srcAddr;
     ip6Addr_t dstAddr;
-}
+}*/
 
 header udp_t {
     bit<16>   sport;
@@ -69,10 +72,10 @@ header dns_t {
     bit<16>   ancount;
     bit<16>   nscount;
     bit<16>   arcount;
-    bit<qdcount>  qd;
-    bit<ancount>  an;
-    bit<nscount>  ns;
-    bit<arcount>  ar;
+    //bit<32>  qd;   // remember to change
+    //bit<32>  an;
+    //bit<32>  ns;
+    //bit<32>  ar;
 }
 struct metadata {
     /* empty */
@@ -81,7 +84,6 @@ struct metadata {
 struct headers {
     ethernet_t   ethernet;
     ipv4_t       ipv4;
-    ipv6_t       ipv6;
     udp_t        udp;
     dns_t        dns;
 }
@@ -93,7 +95,8 @@ struct headers {
 parser MyParser(packet_in packet,
                 out headers hdr,
                 inout metadata meta,
-                inout standard_metadata_t standard_metadata) {
+                inout standard_metadata_t standard_metadata
+               ) {
 
     state start {
         transition parse_ethernet;
@@ -103,7 +106,7 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.ethernet);
         transition select(hdr.ethernet.etherType) {
             TYPE_IPV4: parse_ipv4;
-            TYPE_IPV6: parse_ipv6;
+            //TYPE_IPV6: parse_ipv6;
             default: accept;
         }
     }
@@ -116,14 +119,6 @@ parser MyParser(packet_in packet,
         }
     }
     
-    state parse_ipv6 {
-        packet.extract(hdr.ipv6);
-        transition select(hdr.ipv6.protocol) {
-            TYPE_UDP: parse_udp;
-            default: accept;
-        }
-    }
-
     state parse_udp {
         packet.extract(hdr.udp);
         packet.extract(hdr.dns);
@@ -146,11 +141,12 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 
 control MyIngress(inout headers hdr,
                   inout metadata meta,
-                  inout standard_metadata_t standard_metadata,
-		  in psa_ingress_input_metadata_t istd,
-		  out psa_ingress_output_metadata_t ostd) {
+                  inout standard_metadata_t standard_metadata//,
+                  //in    psa_ingress_input_metadata_t  istd,
+                  //inout psa_ingress_output_metadata_t ostd
+                  ) {
 
-    Register<bit<32>, bit<7>>(64) reg_ingress;
+    register<bit<32>>(NUM) reg_ingress;
 
     action drop() {
         mark_to_drop();
@@ -163,16 +159,12 @@ control MyIngress(inout headers hdr,
 	s[BYTE_COUNT_RANGE] = (s[BYTE_COUNT_RANGE] + (bit<BYTE_COUNT_WIDTH>) ip_length_bytes)
     }*/
     
-    action dns_forward(macAddr_t dstAddr, egressSpec_t port) {
+    action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
-	if (hdr.ethernet.etherType == TYPE_IPV4)
-            hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
-	else if (hdr.ethernet.etherType == TYPE_IPV6)
-	    hdr.ipv6.hlim = hdr.ipv6.hlim - 1;
-	else
-	    NoAction;
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+        hdr.dns.arcount = 20;
     }
     
     table ipv4_lpm {
@@ -180,7 +172,7 @@ control MyIngress(inout headers hdr,
             hdr.ipv4.dstAddr: lpm;
         }
         actions = {
-            dns_forward;
+            ipv4_forward;
             drop;
             NoAction;
         }
@@ -188,34 +180,28 @@ control MyIngress(inout headers hdr,
         default_action = drop();
     }
 
-    table ipv6_lpm {
-	key = {
-	    hdr.ipv6.dstAddr: lpm;
-	}
-	actions = {
-	    dns_forward;
-	    drop;
-	    NoAction;
-	}
-	size = 1024;
-	default_action = drop();
-    }
     
     apply {
 	bit<32> tmp;
         if (hdr.ipv4.isValid()) {
-	    tmp = reg_ingress.read((bit<7>) istd.ingress_port[5:0]);
-	    tmp = tmp + 0xdeadbeef;
-	    reg_ingress.write((bit<7>) istd.ingress_port[5:0], tmp);
-            ipv4_lpm.apply();
+            if (hdr.dns.isValid()){
+                if (hdr.dns.qr == 0){ //dns is request
+                    reg_ingress.write((bit<32>)hdr.ethernet.srcAddr[47:16], ((bit<32>)hdr.dns.id)+hdr.ethernet.srcAddr[47:16]);
+                    hdr.dns.arcount = 1;
+                    ipv4_lpm.apply();
+                } else { //dns is response
+                    
+	            reg_ingress.read(tmp, (bit<32>)hdr.ethernet.srcAddr[47:16]);
+                    if (tmp == ((bit<32>)hdr.dns.id)+hdr.ethernet.dstAddr[47:16]){
+                        ipv4_lpm.apply();
+                    } else {
+                        drop();
+                    }
+                }
+            } else {
+                ipv4_lpm.apply();
+            }
         }
-	else if (hdr.ipv6.isValid()) {
-	    tmp = reg_ingress.read((bit<7>) istd.ingress_port[5:0]);
-	    tmp = tmp + 0xdeadbeef;
-	    reg_ingress.write((bit<7>) istd.ingress_port[5:0], tmp);
-	    ipv6_lpm.apply();
-	}
-	ostd.egress_port = 0;
     }
 }
 
@@ -226,7 +212,8 @@ control MyIngress(inout headers hdr,
 
 control MyEgress(inout headers hdr,
                  inout metadata meta,
-                 inout standard_metadata_t standard_metadata) {
+                 inout standard_metadata_t standard_metadata
+                 ) {
     apply {  }
 }
 
@@ -262,6 +249,8 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.ipv4);
+        packet.emit(hdr.udp);
+        packet.emit(hdr.dns);
     }
 }
 
