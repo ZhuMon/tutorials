@@ -147,7 +147,7 @@ class ExerciseRunner:
     """
     def logger(self, *items):
         if not self.quiet:
-            print(' '.join(items))
+	    print(' '.join(items))
 
     def formatLatency(self, l):
         """ Helper method for parsing link latencies from the topology json. """
