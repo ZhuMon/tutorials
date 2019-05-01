@@ -5,7 +5,7 @@
 
 const bit<16> TYPE_IPV4 = 0x800;
 const bit<16> TYPE_IPV6 = 0x86dd;
-const bit<8>  TYPE_UDP  = 0x17;
+const bit<8>  TYPE_UDP  = 0x11;
 const bit<32> NUM = 65536;
 
 /*************************************************************************
@@ -15,7 +15,7 @@ const bit<32> NUM = 65536;
 typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
-typedef bit<64> ip6Addr_t;
+//typedef bit<64> ip6Addr_t;
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -72,13 +72,13 @@ header dns_t {
     bit<16>   ancount;
     bit<16>   nscount;
     bit<16>   arcount;
-    //bit<32>  qd;   // remember to change
-    //bit<32>  an;
-    //bit<32>  ns;
-    //bit<32>  ar;
+    bit<16> qname;
+    bit<16> qtype;
+    bit<16> qclass;
 }
+
 struct metadata {
-    /* empty */
+
 }
 
 struct headers {
@@ -118,12 +118,12 @@ parser MyParser(packet_in packet,
             default: accept;
         }
     }
-    
     state parse_udp {
         packet.extract(hdr.udp);
         packet.extract(hdr.dns);
         transition accept;
     }
+
 }
 
 /*************************************************************************
@@ -164,7 +164,6 @@ control MyIngress(inout headers hdr,
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
-        hdr.dns.arcount = 20;
     }
     
     table ipv4_lpm {
@@ -183,8 +182,10 @@ control MyIngress(inout headers hdr,
     
     apply {
 	bit<32> tmp;
+
         if (hdr.ipv4.isValid()) {
             if (hdr.dns.isValid()){
+                ipv4_lpm.apply();
                 if (hdr.dns.qr == 0){ //dns is request
                     reg_ingress.write((bit<32>)hdr.ethernet.srcAddr[47:16], ((bit<32>)hdr.dns.id)+hdr.ethernet.srcAddr[47:16]);
                     hdr.dns.arcount = 1;
@@ -197,9 +198,10 @@ control MyIngress(inout headers hdr,
                     } else {
                         drop();
                     }
-                }
+                }*/
             } else {
-                ipv4_lpm.apply();
+                //ipv4_lpm.apply();
+                drop();
             }
         }
     }
@@ -251,6 +253,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
         packet.emit(hdr.ipv4);
         packet.emit(hdr.udp);
         packet.emit(hdr.dns);
+        //packet.emit(hdr.dns_qd);
     }
 }
 

@@ -39,7 +39,7 @@ class IPOption_MRI(IPOption):
                                    IntField("", 0),
                                    length_from=lambda pkt:pkt.count*4) ]
 def handle_pkt(pkt):
-    #print pkt.show()
+    print pkt.show()
     if UDP in pkt and pkt[UDP].dport == 53:
         print "got a packet"
         sys.stdout.flush()

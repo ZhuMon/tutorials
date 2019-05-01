@@ -51,7 +51,7 @@ def main():
     pkt = pkt /IP(dst=addr, src=vic_addr) / UDP(dport=53, sport=random.randint(49152,65535)) / q_pkt[random.randint(0, len(q_pkt))].getlayer(DNS)
     sendp(pkt, iface = iface, verbose=False)
 
-    print pkt.show()
+    print pkt[DNS].show()
     #sniff(iface = iface, 
     #        prn = lambda x: handle_pkt(x),
     #        count = 1)
