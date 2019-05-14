@@ -21,6 +21,10 @@ you get started with P4 programming, organized into several modules:
 * [Calculator](./exercises/other/calc)
 * [Load Balancing](./exercises/load_balance)
 
+5. DNS
+* [DNS Server](./exercises/dns_server)
+* [DNS_Amplification](.exercises/dns_amplification)
+
 ## Presentation 
 
 The slides are available [online](http://bit.ly/p4d2-2018-spring) and
