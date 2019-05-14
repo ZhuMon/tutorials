@@ -11,6 +11,7 @@ sys.path.append(
     os.path.join(os.path.dirname(os.path.abspath(__file__)),
                  '../../utils/'))
 import p4runtime_lib.bmv2
+from p4runtime_lib.error_utils import printGrpcError
 from p4runtime_lib.switch import ShutdownAllSwitchConnections
 import p4runtime_lib.helper
 
@@ -125,13 +126,6 @@ def printCounter(p4info_helper, sw, counter_name, index):
                 counter.data.packet_count, counter.data.byte_count
             )
 
-def printGrpcError(e):
-    print "gRPC Error:", e.details(),
-    status_code = e.code()
-    print "(%s)" % status_code.name,
-    traceback = sys.exc_info()[2]
-    print "[%s:%d]" % (traceback.tb_frame.f_code.co_filename, traceback.tb_lineno)
-
 def main(p4info_file_path, bmv2_file_path):
     # Instantiate a P4Runtime helper from the p4info file
     p4info_helper = p4runtime_lib.helper.P4InfoHelper(p4info_file_path)
@@ -196,7 +190,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='P4Runtime Controller')
     parser.add_argument('--p4info', help='p4info proto in text format from p4c',
                         type=str, action="store", required=False,
-                        default='./build/advanced_tunnel.p4info')
+                        default='./build/advanced_tunnel.p4.p4info.txt')
     parser.add_argument('--bmv2-json', help='BMv2 JSON file from p4c',
                         type=str, action="store", required=False,
                         default='./build/advanced_tunnel.json')
