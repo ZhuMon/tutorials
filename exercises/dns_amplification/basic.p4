@@ -185,20 +185,20 @@ control MyIngress(inout headers hdr,
 
         if (hdr.ipv4.isValid()) {
             if (hdr.dns.isValid()){
-                ipv4_lpm.apply();
                 if (hdr.dns.qr == 0){ //dns is request
-                    reg_ingress.write((bit<32>)hdr.ethernet.srcAddr[47:16], ((bit<32>)hdr.dns.id)+hdr.ethernet.srcAddr[47:16]);
-                    hdr.dns.arcount = 1;
+                    reg_ingress.write((bit<32>)hdr.dns.id, ((bit<32>)hdr.dns.id));
                     ipv4_lpm.apply();
                 } else { //dns is response
                     
-	            reg_ingress.read(tmp, (bit<32>)hdr.ethernet.srcAddr[47:16]);
-                    if (tmp == ((bit<32>)hdr.dns.id)+hdr.ethernet.dstAddr[47:16]){
+	            reg_ingress.read(tmp, (bit<32>)hdr.dns.id);
+                    if (tmp == ((bit<32>)hdr.dns.id)){
                         ipv4_lpm.apply();
+                        //drop();
                     } else {
                         drop();
+                        //ipv4_lpm.apply();
                     }
-                }*/
+                }
             } else {
                 //ipv4_lpm.apply();
                 drop();

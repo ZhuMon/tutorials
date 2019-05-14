@@ -39,9 +39,9 @@ class IPOption_MRI(IPOption):
                                    IntField("", 0),
                                    length_from=lambda pkt:pkt.count*4) ]
 def handle_pkt(pkt):
-    print pkt.show()
     if UDP in pkt and pkt[UDP].dport == 53:
         print "got a packet"
+        print pkt.show()
         sys.stdout.flush()
         for rp in r_pkt:
             if pkt[DNS].id == rp[DNS].id and pkt.qd == rp.qd:
@@ -62,14 +62,15 @@ def main():
     iface = ifaces[0]
     print("iface: ", iface)
 
-    if len(sys.argv) < 2:
-        print("pass 1 argument: <file.pcap>")
-        exit(1)
+    #if len(sys.argv) < 2:
+    #    print("pass 1 argument: <file.pcap>")
+    #    exit(1)
 
     global pcaps # store the packets from .pcap
     global r_pkt # store the packets is received
     
-    pcaps = rdpcap(sys.argv[1])
+    #pcaps = rdpcap(sys.argv[1])
+    pcaps = rdpcap("dns0313_2_onlyDNS.pcapng")
     r_pkt = []
 
     for pkt in pcaps:
