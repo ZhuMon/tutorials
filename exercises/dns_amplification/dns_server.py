@@ -54,6 +54,8 @@ def handle_pkt(pkt):
 def pass_pkt(q,r):
     p = Ether(src = q[Ether].dst, dst=q[Ether].src)
     p = p / IP(dst=q[IP].src) / UDP(dport=q[UDP].sport, sport=53) / r.getlayer(DNS)
+    print "send : "
+    print p.show()
     sendp(p, iface = iface, verbose=False)
 
 def main():

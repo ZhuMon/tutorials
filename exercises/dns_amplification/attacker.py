@@ -38,7 +38,7 @@ def main():
     #addr = socket.gethostbyname(sys.argv[1])
     #vic_addr = socket.gethostbyname(sys.argv[2])
     addr = "10.0.3.3"
-    vic_addr = "10.0.2.2"
+    vic_addr = "10.0.1.1"
     
     iface = get_if()
     print("iface: ", iface)
