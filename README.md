@@ -23,7 +23,7 @@ you get started with P4 programming, organized into several modules:
 
 5. DNS
 * [DNS Server](./exercises/dns_server)
-* [DNS_Amplification](.exercises/dns_amplification)
+* [DNS_Amplification](./exercises/dns_amplification)
 
 ## Presentation 
 
