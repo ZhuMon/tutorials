@@ -41,7 +41,9 @@ class IPOption_MRI(IPOption):
 def handle_pkt(pkt):
     if UDP in pkt and pkt[UDP].dport == 53:
         print "got a packet"
+        print pkt.show()
         sys.stdout.flush()
+        #pass_pkt(pkt, pkt)
         for rp in r_pkt:
             if pkt[DNS].id == rp[DNS].id and pkt.qd == rp.qd:
                 pass_pkt(pkt, rp)

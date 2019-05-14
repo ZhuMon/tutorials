@@ -149,7 +149,7 @@ control MyIngress(inout headers hdr,
     register<bit<32>>(NUM) reg_ingress;
 
     action drop() {
-        mark_to_drop();
+        mark_to_drop(standard_metadata);
     }
 
     /*action update_count (inout PacketByteCountState_t s,

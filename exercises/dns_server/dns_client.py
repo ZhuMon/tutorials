@@ -45,11 +45,19 @@ def main():
     for pkt in pcap:
         if pkt.qr == 0: # the packet is query
             q_pkt.append(pkt)
+        #elif pkt.ancount == 0 and pkt.nscount == 0 and pkt.arcount == 0:
+        #    p = pkt
+        #    break
+    
+
 
     pkt = Ether(src=get_if_hwaddr(iface), dst='ff:ff:ff:ff:ff:ff')
     pkt = pkt /IP(dst=addr) / UDP(dport=53, sport=random.randint(49152,65535)) / q_pkt[random.randint(0, len(q_pkt))].getlayer(DNS)
+    #pkt = pkt /IP(dst=addr) / UDP(dport=53, sport=random.randint(49152,65535)) / p.getlayer(DNS)
     sendp(pkt, iface = iface, verbose=False)
 
+    print "send the packet: "
+    print pkt.show()
     sniff(iface = iface, 
             prn = lambda x: handle_pkt(x),
             count = 1)
