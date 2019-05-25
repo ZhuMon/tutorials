@@ -153,7 +153,7 @@ control MyIngress(inout headers hdr,
 
     register<bit<32>>(NUM) reg_ingress;
     //meter(10, MeterType.packets) my_meter;
-    meter(MAX_NUM, MeterType.packets) ingress_meter_stats;
+    meter(MAX_NUM, MeterType.bytes) ingress_meter_stats;
     MeterColor ingress_meter_output = MeterColor_GREEN;
 
     action drop() {
