@@ -25,8 +25,11 @@ def get_if():
 
 def handle_pkt(pkt):
     if UDP in pkt and pkt[UDP].sport == 53:
-        print "got a response"
-        print pkt.show()
+        #print "got a response"
+        #print pkt.show()
+ 	global num
+	num = num + 1
+	print(num)
         sys.stdout.flush()
 
 def main():
@@ -57,5 +60,6 @@ def main():
 
 
 if __name__ == '__main__':
+    num = 0
     main()
     

@@ -7,6 +7,7 @@ const bit<16> TYPE_IPV4 = 0x800;
 const bit<16> TYPE_IPV6 = 0x86dd;
 const bit<8>  TYPE_UDP  = 0x11;
 const bit<32> NUM = 65536;
+const bit<32> MAX_NUM = 8;
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
@@ -16,6 +17,10 @@ typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
 //typedef bit<64> ip6Addr_t;
+typedef bit<16> mcast_group_t;
+typedef bit<2> MeterColor;
+const MeterColor MeterColor_GREEN = 2w1;
+const MeterColor MeterColor_YELLOW = 2w2;
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -78,7 +83,7 @@ header dns_t {
 }
 
 struct metadata {
-
+    //bit<32>   meter_tag;
 }
 
 struct headers {
@@ -147,6 +152,9 @@ control MyIngress(inout headers hdr,
                   ) {
 
     register<bit<32>>(NUM) reg_ingress;
+    //meter(10, MeterType.packets) my_meter;
+    meter(MAX_NUM, MeterType.packets) ingress_meter_stats;
+    MeterColor ingress_meter_output = MeterColor_GREEN;
 
     action drop() {
         mark_to_drop();
@@ -165,6 +173,51 @@ control MyIngress(inout headers hdr,
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
+
+    /*action m_action(bit<32> meter_index){
+        my_meter.execute_meter((bit<32>) meter_index, meta.meter_tag);
+    }
+
+    action set_tos(bit<8> tos){
+        hdr.ipv4.diffserv = tos;
+    }
+
+    table phy_forward {
+        key = {
+            standard_metadata.ingress_port: exact;
+        }
+        actions = {
+            forward;
+            drop;
+        }
+        size = 1024;
+        default_action = drop();
+    }
+
+    table m_table {
+        key = {
+            hdr.ethernet.dstAddr: exact;
+        }
+        actions = {
+            m_action;
+            NoAction;
+        }
+        size = 1024;
+        default_action = NoAction();
+    }
+
+    table m_filter {
+        key = {
+            meta.meter_tag: exact;
+        }
+        actiosn = {
+            set_tos;
+            drop;
+            NoAction;
+        }
+        size = 1024;
+        default_action = drop();
+    }*/
     
     table ipv4_lpm {
         key = {
@@ -182,6 +235,7 @@ control MyIngress(inout headers hdr,
     
     apply {
 	bit<32> tmp;
+        ingress_meter_stats.execute_meter<MeterColor>((bit<32>) standard_metadata.ingress_port, ingress_meter_output);
 
         if (hdr.ipv4.isValid()) {
             if (hdr.dns.isValid()){
@@ -194,10 +248,16 @@ control MyIngress(inout headers hdr,
                     if (tmp == ((bit<32>)hdr.dns.id)){
                         ipv4_lpm.apply();
                         //drop();
-                    } else {
-                        drop();
+                    } else if(ingress_meter_output == MeterColor_YELLOW) {
+                        //phy_forward.apply();
+                        //m_table.apply();
+                        //m_filter.apply();
+                        //drop();
                         //ipv4_lpm.apply();
-                    }
+                        mark_to_drop();
+                    } else{
+			ipv4_lpm.apply();
+		    }
                 }
             } else {
                 //ipv4_lpm.apply();
