@@ -146,9 +146,7 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 
 control MyIngress(inout headers hdr,
                   inout metadata meta,
-                  inout standard_metadata_t standard_metadata//,
-                  //in    psa_ingress_input_metadata_t  istd,
-                  //inout psa_ingress_output_metadata_t ostd
+                  inout standard_metadata_t standard_metadata
                   ) {
 
     register<bit<32>>(NUM) reg_ingress;
@@ -160,13 +158,6 @@ control MyIngress(inout headers hdr,
         mark_to_drop();
     }
 
-    /*action update_count (inout PacketByteCountState_t s,
-			 in bit<16> ip_length_bytes)
-    {
-	s[PACKET_COUNT_RANGE] = s[PACKET_COUNT_RANGE] + 1;
-	s[BYTE_COUNT_RANGE] = (s[BYTE_COUNT_RANGE] + (bit<BYTE_COUNT_WIDTH>) ip_length_bytes)
-    }*/
-    
     action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
@@ -174,51 +165,6 @@ control MyIngress(inout headers hdr,
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
 
-    /*action m_action(bit<32> meter_index){
-        my_meter.execute_meter((bit<32>) meter_index, meta.meter_tag);
-    }
-
-    action set_tos(bit<8> tos){
-        hdr.ipv4.diffserv = tos;
-    }
-
-    table phy_forward {
-        key = {
-            standard_metadata.ingress_port: exact;
-        }
-        actions = {
-            forward;
-            drop;
-        }
-        size = 1024;
-        default_action = drop();
-    }
-
-    table m_table {
-        key = {
-            hdr.ethernet.dstAddr: exact;
-        }
-        actions = {
-            m_action;
-            NoAction;
-        }
-        size = 1024;
-        default_action = NoAction();
-    }
-
-    table m_filter {
-        key = {
-            meta.meter_tag: exact;
-        }
-        actiosn = {
-            set_tos;
-            drop;
-            NoAction;
-        }
-        size = 1024;
-        default_action = drop();
-    }*/
-    
     table ipv4_lpm {
         key = {
             hdr.ipv4.dstAddr: lpm;
@@ -248,15 +194,11 @@ control MyIngress(inout headers hdr,
                     if (tmp == ((bit<32>)hdr.dns.id)){
                         ipv4_lpm.apply();
                         //drop();
-                    } else if(ingress_meter_output == MeterColor_YELLOW) {
-                        //phy_forward.apply();
-                        //m_table.apply();
-                        //m_filter.apply();
-                        //drop();
-                        //ipv4_lpm.apply();
+                    } else if(tmp == ((bit<32>)hdr.dns.id) && ingress_meter_output == MeterColor_YELLOW) {
                         mark_to_drop();
                     } else{
-			ipv4_lpm.apply();
+			//ipv4_lpm.apply();
+                        mark_to_drop();
 		    }
                 }
             } else {
