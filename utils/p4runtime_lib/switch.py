@@ -128,6 +128,35 @@ class SwitchConnection(object):
             for response in self.client_stub.Read(request):
                 yield response
 
+    def ReadRegisters(self, register_name=None, index=None, dry_run=False):
+        request = p4runtime_pb2.ReadRequest()
+        request.device_id = self.device_id
+        entity = request.entities.add()
+        register_entry = entity.register_entry
+        print register_entry #for debug
+        if register_name is not None:
+            register_entry.register_name = register_name
+        else:
+            register_entry.register_name = ""
+        if index is not None:
+            register_entry.index.index = index
+        if dry_run:
+            print "P4Runtime Read:", request
+        else:
+            for response in self.client_stub.Read(request):
+                yield response
+
+    def WriteRegisterEntry(self, register_entry, dry_run=False):
+        request = p4runtime_pb2.WriteRequest()
+        request.device_id = self.device_id
+        request.election_id.low = 1
+        update = request.updates.add()
+        update.type = p4runtime_pb2.Update.INSERT
+        update.entity.register_entry.CopyFrom(register_entry)
+        if dry_run:
+            print "P4Runtime Write:", request
+        else:
+            self.client_stub.Write(request)
 
 class GrpcRequestLogger(grpc.UnaryUnaryClientInterceptor,
                         grpc.UnaryStreamClientInterceptor):

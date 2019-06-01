@@ -37,6 +37,12 @@ def printGrpcError(e):
     traceback = sys.exc_info()[2]
     print "[%s:%d]" % (traceback.tb_frame.f_code.co_filename, traceback.tb_lineno)
 
+def printRegister(p4info_helper, sw, register_name, index):
+    for response in sw.ReadRegisters(p4info_helper.get_register_name(register_name), index):
+        for entity in response.entities:
+            register = entity.register_entry
+            print "%s %s %d: %s" % (sw.name, register_name, index, register.data)
+
 def main(p4info_file_path, bmv2_file_path):
     # Instantiate a P4Runtime helper from the p4info file
     p4info_helper = p4runtime_lib.helper.P4InfoHelper(p4info_file_path)
@@ -80,6 +86,15 @@ def main(p4info_file_path, bmv2_file_path):
         s3.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
                                        bmv2_json_file_path=bmv2_file_path)
         print "Installed P4 Program using SetForwardingPipelineConfig on s3"
+
+        register_entry = p4info_helper.buildRegisterEntry(
+            register_name = "reg_ingress",
+            index = 0,
+            data = "\000"
+        )
+        s1.WriteRegisterEntry(register_entry)
+        print "Write device_id to register on s1"
+
 	#############################################################################
 	writeIPRules(p4info_helper, ingress_sw=s1, dst_eth_addr="00:00:00:00:01:01", dst_ip="10.0.1.1", mask=32, port=1)
 	writeIPRules(p4info_helper, ingress_sw=s1, dst_eth_addr="00:00:00:03:03:00", dst_ip="10.0.3.3", mask=32, port=2)
@@ -91,10 +106,19 @@ def main(p4info_file_path, bmv2_file_path):
 
 	#############################################################################
 
+
     except KeyboardInterrupt:
         print " Shutting down."
     except grpc.RpcError as e:
         printGrpcError(e)
+
+    tmp = raw_input()
+    while tmp != 'a':
+        print '\n---Reading Registers----\n'
+        printRegister(p4info_helper, s1, "Myingress.reg_ingress", 20122)
+        printRegister(p4info_helper, s1, "Myingress.reg_ingress", 1868)
+        printRegister(p4info_helper, s1, "Myingress.reg_ingress", 0)
+        tmp = raw_input()
 
     ShutdownAllSwitchConnections()
 
