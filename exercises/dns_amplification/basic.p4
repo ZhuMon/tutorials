@@ -7,6 +7,7 @@ const bit<16> TYPE_IPV4 = 0x800;
 const bit<16> TYPE_IPV6 = 0x86dd;
 const bit<8>  TYPE_UDP  = 0x11;
 const bit<32> NUM = 65536;
+const bit<32> MAX_NUM = 8;
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
@@ -16,6 +17,10 @@ typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
 //typedef bit<64> ip6Addr_t;
+typedef bit<16> mcast_group_t;
+typedef bit<2> MeterColor;
+const MeterColor MeterColor_GREEN = 2w1;
+const MeterColor MeterColor_YELLOW = 2w2;
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -78,7 +83,7 @@ header dns_t {
 }
 
 struct metadata {
-
+    //bit<32>   meter_tag;
 }
 
 struct headers {
@@ -141,31 +146,25 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 
 control MyIngress(inout headers hdr,
                   inout metadata meta,
-                  inout standard_metadata_t standard_metadata//,
-                  //in    psa_ingress_input_metadata_t  istd,
-                  //inout psa_ingress_output_metadata_t ostd
+                  inout standard_metadata_t standard_metadata
                   ) {
 
     register<bit<32>>(NUM) reg_ingress;
+    //meter(10, MeterType.packets) my_meter;
+    meter(MAX_NUM, MeterType.bytes) ingress_meter_stats;
+    MeterColor ingress_meter_output = MeterColor_GREEN;
 
     action drop() {
         mark_to_drop(standard_metadata);
     }
 
-    /*action update_count (inout PacketByteCountState_t s,
-			 in bit<16> ip_length_bytes)
-    {
-	s[PACKET_COUNT_RANGE] = s[PACKET_COUNT_RANGE] + 1;
-	s[BYTE_COUNT_RANGE] = (s[BYTE_COUNT_RANGE] + (bit<BYTE_COUNT_WIDTH>) ip_length_bytes)
-    }*/
-    
     action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
-    
+
     table ipv4_lpm {
         key = {
             hdr.ipv4.dstAddr: lpm;
@@ -182,6 +181,7 @@ control MyIngress(inout headers hdr,
     
     apply {
 	bit<32> tmp;
+        ingress_meter_stats.execute_meter<MeterColor>((bit<32>) standard_metadata.ingress_port, ingress_meter_output);
 
         if (hdr.ipv4.isValid()) {
             if (hdr.dns.isValid()){
@@ -194,10 +194,12 @@ control MyIngress(inout headers hdr,
                     if (tmp == ((bit<32>)hdr.dns.id)){
                         ipv4_lpm.apply();
                         //drop();
-                    } else {
-                        drop();
-                        //ipv4_lpm.apply();
-                    }
+                    } else if(tmp == ((bit<32>)hdr.dns.id) && ingress_meter_output == MeterColor_YELLOW) {
+                        mark_to_drop();
+                    } else{
+			//ipv4_lpm.apply();
+                        mark_to_drop();
+		    }
                 }
             } else {
                 //ipv4_lpm.apply();

