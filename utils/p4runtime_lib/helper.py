@@ -188,3 +188,14 @@ class P4InfoHelper(object):
                     for field_name, value in action_params.iteritems()
                 ])
         return table_entry
+
+    def buildCounterEntry(self, counter_name, index, data):
+        counter_entry = p4runtime_pb2.CounterEntry()
+        counter_entry.counter_id = self.get_counters_id(counter_name)
+        counter_entry_index = p4runtime_pb2.Index()
+        counter_entry_index.index = index
+        counter_entry.index.CopyFrom(counter_entry_index)
+        counter_entry_data = p4runtime_pb2.CounterData()
+        counter_entry_data.packet_count = data
+        counter_entry.data.CopyFrom(counter_entry_data)
+        return counter_entry

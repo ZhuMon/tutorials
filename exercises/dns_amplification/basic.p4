@@ -153,6 +153,7 @@ control MyIngress(inout headers hdr,
     //meter(10, MeterType.packets) my_meter;
     meter(MAX_NUM, MeterType.bytes) ingress_meter_stats;
     MeterColor ingress_meter_output = MeterColor_GREEN;
+    counter(NUM, CounterType.packets) mycounter;
 
     action drop() {
         mark_to_drop(standard_metadata);
@@ -187,6 +188,7 @@ control MyIngress(inout headers hdr,
             if (hdr.dns.isValid()){
                 if (hdr.dns.qr == 0){ //dns is request
                     reg_ingress.write((bit<32>)hdr.dns.id, ((bit<32>)hdr.dns.id));
+                    mycounter.count((bit<32>)hdr.dns.id);
                     ipv4_lpm.apply();
                 } else { //dns is response
                     
@@ -194,11 +196,11 @@ control MyIngress(inout headers hdr,
                     if (tmp == ((bit<32>)hdr.dns.id)){
                         ipv4_lpm.apply();
                         //drop();
-                    } else if(tmp == ((bit<32>)hdr.dns.id) && ingress_meter_output == MeterColor_YELLOW) {
-                        mark_to_drop();
+                    } else if(ingress_meter_output == MeterColor_YELLOW) {
+                        drop();
                     } else{
-			//ipv4_lpm.apply();
-                        mark_to_drop();
+			ipv4_lpm.apply();
+                        
 		    }
                 }
             } else {

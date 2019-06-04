@@ -115,6 +115,18 @@ class SwitchConnection(object):
             for response in self.client_stub.Read(request):
                 yield response
 
+    def WriteCounters(self, counter_entry, dry_run=False):
+        request = p4runtime_pb2.WriteRequest()
+        request.device_id = self.device_id
+        request.election_id.low = 1
+        update = request.updates.add()
+        update.type = p4runtime_pb2.Update.MODIFY
+        update.entity.counter_entry.CopyFrom(counter_entry)
+        if dry_run:
+            print "P4Runtime Write:", request
+        else:
+            self.client_stub.Write(request)
+
     def ReadCounters(self, counter_id=None, index=None, dry_run=False):
         request = p4runtime_pb2.ReadRequest()
         request.device_id = self.device_id
@@ -130,6 +142,26 @@ class SwitchConnection(object):
             print "P4Runtime Read:", request
         else:
             for response in self.client_stub.Read(request):
+                yield response
+
+    def ReadRegisters(self, register_id=None, index=None, dry_run=False):
+        request = p4runtime_pb2.ReadRequest()
+        request.device_id = self.device_id
+        entity = request.entities.add()
+        register_entry = entity.register_entry
+
+        if register_id is not None:
+            register_entry.register_id = register_id
+        else:
+            register_entry.register_id = 0
+        if index is not None:
+            register_entry.index.index = index
+        if dry_run:
+            print "P4Runtime Read:", request
+        else:
+            for response in self.client_stub.Read(request):
+                print "hi"
+                print register_entry 
                 yield response
 
 

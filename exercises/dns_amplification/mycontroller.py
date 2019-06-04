@@ -37,6 +37,20 @@ def printGrpcError(e):
     traceback = sys.exc_info()[2]
     print "[%s:%d]" % (traceback.tb_frame.f_code.co_filename, traceback.tb_lineno)
 
+def printRegister(p4info_helper, sw, register_name, index):
+    for response in sw.ReadRegisters(p4info_helper.get_registers_id(register_name), index, dry_run=False):
+        for entity in response.entities:
+            register = entity.register_entry
+            print "%s %s %d: %s" % (sw.name, register_name, index, register.data.data.enum)
+
+def printCounter(p4info_helper, sw, counter_name, index):
+    for response in sw.ReadCounters(p4info_helper.get_counters_id(counter_name), index):
+        for entity in response.entities:
+            counter = entity.counter_entry
+            print "%s %s %d: %d" % (
+                sw.name, counter_name, index, counter.data.packet_count
+            )
+
 def main(p4info_file_path, bmv2_file_path):
     # Instantiate a P4Runtime helper from the p4info file
     p4info_helper = p4runtime_lib.helper.P4InfoHelper(p4info_file_path)
@@ -95,6 +109,23 @@ def main(p4info_file_path, bmv2_file_path):
         print " Shutting down."
     except grpc.RpcError as e:
         printGrpcError(e)
+    tmp = raw_input()
+    while tmp != 'a':
+        #print '\n---Reading Registers----\n'
+        #printRegister(p4info_helper, s1, "MyIngress.reg_ingress", 20122)
+        #printRegister(p4info_helper, s1, "MyIngress.reg_ingress", 1868)
+        # printRegister(p4info_helper, s1, "MyIngress.reg_ingress", 0)
+        printCounter(p4info_helper, s1, "MyIngress.mycounter", 20122)
+        printCounter(p4info_helper, s1, "MyIngress.mycounter", 1863)
+        printCounter(p4info_helper, s1, "MyIngress.mycounter", 18880)
+        tmp = raw_input()
+        if tmp == 'i':
+            counter_entry = p4info_helper.buildCounterEntry(
+                    counter_name = "MyIngress.mycounter",
+                    index = 20122,
+                    data = 0 
+            )
+            s1.WriteCounters(counter_entry)
 
     ShutdownAllSwitchConnections()
 
@@ -102,7 +133,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='P4Runtime Controller')
     parser.add_argument('--p4info', help='p4info proto in text format from p4c',
                         type=str, action="store", required=False,
-                        default='./build/basic.p4info')
+                        default='./build/basic.p4.p4info.txt')
     parser.add_argument('--bmv2-json', help='BMv2 JSON file from p4c',
                         type=str, action="store", required=False,
                         default='./build/basic.json')
