@@ -150,10 +150,11 @@ control MyIngress(inout headers hdr,
                   ) {
 
     register<bit<32>>(NUM) reg_ingress;
+    register<bit<32>>(1) r_reg; // record # of DNS response 
+    register<bit<32>>(1) f_reg; // flag to determine if do project
     //meter(10, MeterType.packets) my_meter;
     meter(MAX_NUM, MeterType.bytes) ingress_meter_stats;
     MeterColor ingress_meter_output = MeterColor_GREEN;
-    counter(NUM, CounterType.packets) mycounter;
 
     action drop() {
         mark_to_drop(standard_metadata);
@@ -182,26 +183,37 @@ control MyIngress(inout headers hdr,
     
     apply {
 	bit<32> tmp;
+        bit<32> flag;
         ingress_meter_stats.execute_meter<MeterColor>((bit<32>) standard_metadata.ingress_port, ingress_meter_output);
 
         if (hdr.ipv4.isValid()) {
             if (hdr.dns.isValid()){
-                if (hdr.dns.qr == 0){ //dns is request
-                    reg_ingress.write((bit<32>)hdr.dns.id, ((bit<32>)hdr.dns.id));
-                    mycounter.count((bit<32>)hdr.dns.id);
-                    ipv4_lpm.apply();
-                } else { //dns is response
-                    
-	            reg_ingress.read(tmp, (bit<32>)hdr.dns.id);
-                    if (tmp == ((bit<32>)hdr.dns.id)){
+                if(hdr.dns.qr == 1){
+                    r_reg.read(tmp, 0);
+                    r_reg.write(0, tmp+1);
+                }
+
+                f_reg.read(flag, 0);
+                if (flag > 0){
+                    if (hdr.dns.qr == 0){ //dns is request
+                        reg_ingress.read(tmp, (bit<32>)hdr.dns.id);
+                        reg_ingress.write((bit<32>)hdr.dns.id, tmp+10);
                         ipv4_lpm.apply();
-                        //drop();
-                    } else if(ingress_meter_output == MeterColor_YELLOW) {
-                        drop();
-                    } else{
-			ipv4_lpm.apply();
+                    } else { //dns is response
                         
-		    }
+                        reg_ingress.read(tmp, (bit<32>)hdr.dns.id);
+                        if (tmp > 0){
+                            reg_ingress.write((bit<32>)hdr.dns.id, 0);
+                            ipv4_lpm.apply();
+                        } else if(ingress_meter_output == MeterColor_YELLOW) {
+                            drop();
+                        } else{
+                            ipv4_lpm.apply();
+                            
+                        }
+                    }
+                } else {
+                    ipv4_lpm.apply();
                 }
             } else {
                 //ipv4_lpm.apply();

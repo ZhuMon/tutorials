@@ -13,6 +13,8 @@ sys.path.append(
 import p4runtime_lib.bmv2
 from p4runtime_lib.switch import ShutdownAllSwitchConnections
 import p4runtime_lib.helper
+import runtime_CLI
+import bmpy_utils as utils
 
 SWITCH_TO_HOST_PORT = 1
 SWITCH_TO_SWITCH_PORT = 2
@@ -51,12 +53,20 @@ def printCounter(p4info_helper, sw, counter_name, index):
                 sw.name, counter_name, index, counter.data.packet_count
             )
 
-def main(p4info_file_path, bmv2_file_path):
+def read_register(runtimeAPI, name, index):
+    reg = runtimeAPI.get_res("register", name, runtime_CLI.ResType.register_array)
+    return runtimeAPI.client.bm_register_read(0, reg.name, index)
+
+def write_register(runtimeAPI, name, index, value):
+    register = runtimeAPI.get_res("register", name, runtime_CLI.ResType.register_array)
+    runtimeAPI.client.bm_register_write(0, register.name, index, value)
+
+def main(p4info_file_path, bmv2_file_path, runtimeAPI):
     # Instantiate a P4Runtime helper from the p4info file
     p4info_helper = p4runtime_lib.helper.P4InfoHelper(p4info_file_path)
 
     try:
-        # Create a switch connection object for s1 and s2;
+        # Create a switch connection object for s1 s2 s3;
         # this is backed by a P4Runtime gRPC connection.
         # Also, dump all P4Runtime messages sent to switch to given txt files.
         s1 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
@@ -105,38 +115,55 @@ def main(p4info_file_path, bmv2_file_path):
 
 	#############################################################################
 
+    # set meter
+    runtimeAPI.do_meter_array_set_rates("meter_array_set_rates ingress_meter_stats 0.0000128:9000 0.0000128:9000")
+
+    m = 0
+    while True:
+        print "------------"
+        print m," minute"
+        res_num = read_register(runtimeAPI, "r_reg", 0)
+        flag = read_register(runtimeAPI, "f_reg", 0)
+        print "res_num: ", res_num
+        print "flag: ", flag
+        if res_num >= 10:
+            if flag >= 5:
+                write_register(runtimeAPI, "f_reg", 0, flag+1)
+            else:
+                write_register(runtimeAPI, "f_reg", 0, 5)
+        elif res_num < 10 and flag > 0:
+            write_register(runtimeAPI, "f_reg", 0, flag-1)
+
+        if flag > 0:
+            print "Mode on..."
+            for i in range(0, 65536):
+                t_id = read_register(runtimeAPI, "reg_ingress", i)
+                if t_id > 0:
+                    write_register(runtimeAPI, "reg_ingress", i, t_id-1)
+                    print "reg[",i,"] = ",t_id-1
+        
+        write_register(runtimeAPI, "r_reg", 0, 0) # clean r_reg every minute
+        m += 1
+        sleep(30)
+
+
     except KeyboardInterrupt:
         print " Shutting down."
     except grpc.RpcError as e:
         printGrpcError(e)
-    tmp = raw_input()
-    while tmp != 'a':
-        #print '\n---Reading Registers----\n'
-        #printRegister(p4info_helper, s1, "MyIngress.reg_ingress", 20122)
-        #printRegister(p4info_helper, s1, "MyIngress.reg_ingress", 1868)
-        # printRegister(p4info_helper, s1, "MyIngress.reg_ingress", 0)
-        printCounter(p4info_helper, s1, "MyIngress.mycounter", 20122)
-        printCounter(p4info_helper, s1, "MyIngress.mycounter", 1863)
-        printCounter(p4info_helper, s1, "MyIngress.mycounter", 18880)
-        tmp = raw_input()
-        if tmp == 'i':
-            counter_entry = p4info_helper.buildCounterEntry(
-                    counter_name = "MyIngress.mycounter",
-                    index = 20122,
-                    data = 0 
-            )
-            s1.WriteCounters(counter_entry)
 
     ShutdownAllSwitchConnections()
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='P4Runtime Controller')
+    # parser = argparse.ArgumentParser(description='P4Runtime Controller')
+    parser = runtime_CLI.get_parser()
     parser.add_argument('--p4info', help='p4info proto in text format from p4c',
                         type=str, action="store", required=False,
                         default='./build/basic.p4.p4info.txt')
     parser.add_argument('--bmv2-json', help='BMv2 JSON file from p4c',
                         type=str, action="store", required=False,
                         default='./build/basic.json')
+
     args = parser.parse_args()
 
     if not os.path.exists(args.p4info):
@@ -147,4 +174,13 @@ if __name__ == '__main__':
         parser.print_help()
         print "\nBMv2 JSON file not found: %s\nHave you run 'make'?" % args.bmv2_json
         parser.exit(1)
-    main(args.p4info, args.bmv2_json)
+
+
+    standard_client, mc_client = utils.thrift_connect(
+        args.thrift_ip, args.thrift_port,
+        runtime_CLI.RuntimeAPI.get_thrift_services(args.pre)
+    )
+
+    runtime_CLI.load_json_config(standard_client, args.bmv2_json)
+    runtimeAPI = runtime_CLI.RuntimeAPI(args.pre, standard_client, mc_client)
+    main(args.p4info, args.bmv2_json, runtimeAPI)
