@@ -40,8 +40,10 @@ class IPOption_MRI(IPOption):
                                    length_from=lambda pkt:pkt.count*4) ]
 def handle_pkt(pkt):
     if UDP in pkt and pkt[UDP].dport == 53:
-        print "got a packet"
-        print pkt.show()
+        global r_num
+        print r_num, ". got a packet ", pkt[DNS].id
+        r_num += 1
+        # print pkt.show()
         sys.stdout.flush()
         for rp in r_pkt:
             if pkt[DNS].id == rp[DNS].id and pkt.qd == rp.qd:
@@ -54,8 +56,10 @@ def handle_pkt(pkt):
 def pass_pkt(q,r):
     p = Ether(src = q[Ether].dst, dst=q[Ether].src)
     p = p / IP(dst=q[IP].src) / UDP(dport=q[UDP].sport, sport=53) / r.getlayer(DNS)
-    print "send : "
-    print p.show()
+    global s_num
+    print s_num, ". send : ", p[DNS].id
+    s_num += 1
+    #print p.show()
     sendp(p, iface = iface, verbose=False)
 
 def main():
@@ -86,4 +90,6 @@ def main():
           prn = lambda x: handle_pkt(x))
 
 if __name__ == '__main__':
+    s_num = 0
+    r_num = 0
     main()

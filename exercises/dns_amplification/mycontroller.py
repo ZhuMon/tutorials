@@ -54,11 +54,13 @@ def printCounter(p4info_helper, sw, counter_name, index):
             )
 
 def read_register(runtimeAPI, name, index):
-    reg = runtimeAPI.get_res("register", name, runtime_CLI.ResType.register_array)
+    reg = runtimeAPI.get_res("register", name, 
+                            runtime_CLI.ResType.register_array)
     return runtimeAPI.client.bm_register_read(0, reg.name, index)
 
 def write_register(runtimeAPI, name, index, value):
-    register = runtimeAPI.get_res("register", name, runtime_CLI.ResType.register_array)
+    register = runtimeAPI.get_res("register", name, 
+                            runtime_CLI.ResType.register_array)
     runtimeAPI.client.bm_register_write(0, register.name, index, value)
 
 def main(p4info_file_path, bmv2_file_path, runtimeAPI):
@@ -115,36 +117,41 @@ def main(p4info_file_path, bmv2_file_path, runtimeAPI):
 
 	#############################################################################
 
-    # set meter
-    runtimeAPI.do_meter_array_set_rates("meter_array_set_rates ingress_meter_stats 0.0000128:9000 0.0000128:9000")
+        # set meter
+        runtimeAPI.do_meter_array_set_rates("meter_array_set_rates ingress_meter_stats 0.00000128:9000 0.00000128:9000")
 
-    m = 0
-    while True:
-        print "------------"
-        print m," minute"
-        res_num = read_register(runtimeAPI, "r_reg", 0)
-        flag = read_register(runtimeAPI, "f_reg", 0)
-        print "res_num: ", res_num
-        print "flag: ", flag
-        if res_num >= 10:
-            if flag >= 5:
-                write_register(runtimeAPI, "f_reg", 0, flag+1)
-            else:
-                write_register(runtimeAPI, "f_reg", 0, 5)
-        elif res_num < 10 and flag > 0:
-            write_register(runtimeAPI, "f_reg", 0, flag-1)
+        m = 0
+        total_res_num = 0
+        while True:
+            print "------------"
+            print m," minute"
+            now_res_num = read_register(runtimeAPI, "r_reg", 0)
+            res_num = now_res_num - total_res_num
+            total_res_num = now_res_num
 
-        if flag > 0:
-            print "Mode on..."
-            for i in range(0, 65536):
-                t_id = read_register(runtimeAPI, "reg_ingress", i)
-                if t_id > 0:
-                    write_register(runtimeAPI, "reg_ingress", i, t_id-1)
-                    print "reg[",i,"] = ",t_id-1
-        
-        write_register(runtimeAPI, "r_reg", 0, 0) # clean r_reg every minute
-        m += 1
-        sleep(30)
+            flag = read_register(runtimeAPI, "f_reg", 0)
+            print "res_num: ", res_num
+            print "flag: ", flag
+            if res_num >= 10:
+                if flag >= 5:
+                    write_register(runtimeAPI, "f_reg", 0, flag+1)
+                else:
+                    write_register(runtimeAPI, "f_reg", 0, 5)
+            elif res_num < 10 and flag > 0:
+                write_register(runtimeAPI, "f_reg", 0, flag-1)
+
+            if flag > 0:
+                print "Mode on..."
+                for i in range(0, 65536):
+                    t_id = read_register(runtimeAPI, "reg_ingress", i)
+                    if t_id > 0:
+                        write_register(runtimeAPI, "reg_ingress", i, t_id-1)
+                        print "reg[",i,"] = ",t_id-1
+            
+            # print "2nd res: ",read_register(runtimeAPI, "r_reg", 0)
+            # write_register(runtimeAPI, "r_reg", 0, 0) # clean r_reg every minute
+            m += 1
+            sleep(30)
 
 
     except KeyboardInterrupt:
