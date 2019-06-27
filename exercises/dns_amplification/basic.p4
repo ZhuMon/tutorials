@@ -182,6 +182,7 @@ control MyIngress(inout headers hdr,
 
     
     apply {
+        bit<32> index;
 	bit<32> tmp;
         bit<32> flag;
         ingress_meter_stats.execute_meter<MeterColor>((bit<32>) standard_metadata.ingress_port, ingress_meter_output);
@@ -196,14 +197,26 @@ control MyIngress(inout headers hdr,
                 f_reg.read(flag, 0);
                 if (flag > 0){
                     if (hdr.dns.qr == 0){ //dns is request
-                        reg_ingress.read(tmp, (bit<32>)hdr.dns.id);
-                        reg_ingress.write((bit<32>)hdr.dns.id, tmp+10);
+                        index = (hdr.ipv4.srcAddr << 24) >> 24;
+                        index = index % 64;
+                        index = index << 10;
+                        index = index + ((bit<32>)hdr.dns.id % 1024);
+                        reg_ingress.read(tmp, index);
+                        reg_ingress.write(index, tmp+10);
+                        /*reg_ingress.write(0, index);*/
                         ipv4_lpm.apply();
                     } else { //dns is response
+                        index = (hdr.ipv4.dstAddr << 24) >> 24;
+                        index = index % 64;
+                        index = index << 10;
+                        index = index + ((bit<32>)hdr.dns.id % 1024);
                         
-                        reg_ingress.read(tmp, (bit<32>)hdr.dns.id);
-                        if (tmp > 0){
-                            reg_ingress.write((bit<32>)hdr.dns.id, 0);
+                        reg_ingress.read(tmp, index);
+                        if (tmp > 10){
+                            reg_ingress.write(index, tmp - 10);
+                            ipv4_lpm.apply();
+                        } else if (tmp > 0){
+                            reg_ingress.write(index, 0);
                             ipv4_lpm.apply();
                         } else if(ingress_meter_output == MeterColor_YELLOW) {
                             drop();
