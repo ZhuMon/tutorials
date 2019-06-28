@@ -54,12 +54,14 @@ def main():
     for i in range(0,int(N)):
         a = raw_input()
         pkt = Ether(src=get_if_hwaddr(iface), dst='ff:ff:ff:ff:ff:ff')
-        pkt = pkt /IP(dst=addr, src="10.0.1.1") / UDP(dport=53, sport=random.randint(49152,65535)) / q_pkt[int(a)].getlayer(DNS)
+        sport = random.randint(49152,65535)
+        pkt = pkt /IP(dst=addr, src="10.0.1.1") / UDP(dport=53, sport=sport) / q_pkt[int(a)].getlayer(DNS)
         sendp(pkt, iface = iface, verbose=False)
         print "send a packet"
-        sniff(iface = iface, 
-                prn = lambda x: handle_pkt(x),
-                count = 1)
+        sniff(stop_filter = lambda x: (x.haslayer(DNS) and x[DNS].id == pkt[DNS].id),
+                iface = iface, 
+                prn = lambda x: handle_pkt(x), 
+                timeout = 5)
         
         #print "sniffing on %s" % iface
 	
