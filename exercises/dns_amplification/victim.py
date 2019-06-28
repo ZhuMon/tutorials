@@ -24,11 +24,11 @@ def get_if():
     return iface
 
 def handle_pkt(pkt):
+    global num
+    num = num + 1
+    print num," got a response"
+    # print pkt.show()
     if UDP in pkt and pkt[UDP].sport == 53:
-        #print "got a response"
-        #print pkt.show()
- 	global num
-	num = num + 1
 	print num," ",pkt.getlayer(DNS).id
         sys.stdout.flush()
 
@@ -38,9 +38,10 @@ def main():
     #    print('pass 2 argument: <destination> "<file.pcap>"')
     #    exit(1)
 
-    addr = socket.gethostbyname("10.0.3.3") # dns_server
+    # addr = socket.gethostbyname("10.0.3.3") # dns_server
+    addr = "10.0.3.3"
     iface = get_if()
-    #print("iface: ", iface)
+    print("iface: ", iface)
 
     pcap = rdpcap("dns0313_2_onlyDNS.pcapng")
 
@@ -49,11 +50,11 @@ def main():
         if pkt.qr == 0: # the packet is query
             q_pkt.append(pkt)
 
-    N = input()
-    for i in range(0,N):
-        a = input()
+    N = raw_input()
+    for i in range(0,int(N)):
+        a = raw_input()
         pkt = Ether(src=get_if_hwaddr(iface), dst='ff:ff:ff:ff:ff:ff')
-        pkt = pkt /IP(dst=addr) / UDP(dport=53, sport=random.randint(49152,65535)) / q_pkt[a].getlayer(DNS)
+        pkt = pkt /IP(dst=addr, src="10.0.1.1") / UDP(dport=53, sport=random.randint(49152,65535)) / q_pkt[int(a)].getlayer(DNS)
         sendp(pkt, iface = iface, verbose=False)
         print "send a packet"
         sniff(iface = iface, 

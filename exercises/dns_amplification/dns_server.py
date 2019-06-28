@@ -54,12 +54,14 @@ def handle_pkt(pkt):
     #    hexdump(pkt)
 
 def pass_pkt(q,r):
-    p = Ether(src = q[Ether].dst, dst=q[Ether].src)
+    # p = Ether(src = q[Ether].dst, dst=q[Ether].src)
+    p = Ether(src = get_if_hwaddr(iface), dst="FF:FF:FF:FF:FF:FF")
+    # print "Ether_src: ", q[Ether].src
     p = p / IP(dst=q[IP].src) / UDP(dport=q[UDP].sport, sport=53) / r.getlayer(DNS)
     global s_num
     print s_num, ". send : ", p[DNS].id
     s_num += 1
-    #print p.show()
+    # print p.show()
     sendp(p, iface = iface, verbose=False)
 
 def main():

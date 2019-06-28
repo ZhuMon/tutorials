@@ -118,7 +118,12 @@ def main(p4info_file_path, bmv2_file_path, runtimeAPI):
 	#############################################################################
 
         # set meter
-        runtimeAPI.do_meter_array_set_rates("meter_array_set_rates ingress_meter_stats 0.00000128:9000 0.00000128:9000")
+        # runtimeAPI.do_meter_array_set_rates("meter_array_set_rates ingress_meter_stats 0.00000128:9000 0.00000128:9000")
+        meter = runtimeAPI.get_res("meter", "ingress_meter_stats", runtime_CLI.ResType.meter_array)
+        new_rates = []
+        new_rates.append(runtime_CLI.BmMeterRateConfig(0.00000128, 9000))
+        new_rates.append(runtime_CLI.BmMeterRateConfig(0.00000128, 9000))
+        runtimeAPI.client.bm_meter_array_set_rates(0, meter.name, new_rates)
 
         m = 0
         total_res_num = 0

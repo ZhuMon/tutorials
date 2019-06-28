@@ -185,7 +185,6 @@ control MyIngress(inout headers hdr,
         bit<32> index;
 	bit<32> tmp;
         bit<32> flag;
-        ingress_meter_stats.execute_meter<MeterColor>((bit<32>) standard_metadata.ingress_port, ingress_meter_output);
 
         if (hdr.ipv4.isValid()) {
             if (hdr.dns.isValid()){
@@ -206,6 +205,7 @@ control MyIngress(inout headers hdr,
                         /*reg_ingress.write(0, index);*/
                         ipv4_lpm.apply();
                     } else { //dns is response
+                        ingress_meter_stats.execute_meter<MeterColor>((bit<32>) standard_metadata.ingress_port, ingress_meter_output);
                         index = (hdr.ipv4.dstAddr << 24) >> 24;
                         index = index % 64;
                         index = index << 10;
@@ -229,8 +229,8 @@ control MyIngress(inout headers hdr,
                     ipv4_lpm.apply();
                 }
             } else {
-                //ipv4_lpm.apply();
-                drop();
+                ipv4_lpm.apply();
+                /*drop();*/
             }
         }
     }
