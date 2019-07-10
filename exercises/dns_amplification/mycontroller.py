@@ -16,21 +16,66 @@ import p4runtime_lib.helper
 import runtime_CLI
 import bmpy_utils as utils
 
+from scapy.all import *
+from scapy.contrib import lldp
+from scapy.config import conf
+from scapy.packet import bind_layers
+
+# from concurrent import futures
+# from p4.v1 import p4runtime_pb2
+# from p4.v1 import p4runtime_pb2_grpc
+
+from ryu.topology.switches import LLDPPacket
+
 SWITCH_TO_HOST_PORT = 1
 SWITCH_TO_SWITCH_PORT = 2
 
+
 def writeIPRules(p4info_helper, ingress_sw, dst_eth_addr, dst_ip, mask, port):
     table_entry = p4info_helper.buildTableEntry(
-    table_name = "MyIngress.ipv4_lpm",
-    match_fields = {
-	"hdr.ipv4.dstAddr": (dst_ip, mask)
-    },
-    action_name = "MyIngress.ipv4_forward",
-    action_params={
-        "dstAddr":dst_eth_addr,
-	"port":port
-    })
+        table_name = "MyIngress.ipv4_lpm",
+        match_fields = {
+            "hdr.ipv4.dstAddr": (dst_ip, mask)
+        },
+        action_name = "MyIngress.ipv4_forward",
+        action_params={
+            "dstAddr":dst_eth_addr,
+            "port":port
+        })
     ingress_sw.WriteTableEntry(table_entry)
+
+def writeRecordRules(p4info_helper, ingress_sw, qr_code):
+    table_entry = p4info_helper.buildTableEntry(
+        table_name = "MyIngress.dns_response_record",
+        match_fields = {
+            "hdr.dns.qr": qr_code
+        },
+        action_name = "MyIngress.record_response"
+        )
+    ingress_sw.WriteTableEntry(table_entry)
+
+def writeHash1Rule(p4info_helper, ingress_sw , srcAddr):
+    table_entry = p4info_helper.buildTableEntry(
+        table_name = "MyIngress.dns_request_hash_lpm",
+        match_fields = {
+            "hdr.ipv4.srcAddr": (srcAddr, 32)
+        },
+        action_name = "MyIngress.dns_request_hash_1",
+        action_params={
+            "srcAddr":srcAddr,
+        })
+    ingress_sw.WriteTableEntry(table_entry)
+
+def writeLLDPRule(p4info_helper, ingress_sw, srcAddr):
+    table_entry = p4info_helper.buildTableEntry(
+        table_name = "MyIngress.lldp_lpm",
+        match_fields = {
+            "hdr.ethernet.srcAddr": (srcAddr,48)
+        },
+        action_name = "lldp_forward"
+        )
+    ingress_sw.WriteTableEntry(table_entry)
+    
 
 def printGrpcError(e):
     print "gRPC Error:", e.details(),
@@ -72,22 +117,23 @@ def main(p4info_file_path, bmv2_file_path, runtimeAPI):
         # this is backed by a P4Runtime gRPC connection.
         # Also, dump all P4Runtime messages sent to switch to given txt files.
         s1 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-            name='s1',
-            address='127.0.0.1:50051',
-            device_id=0,
-            proto_dump_file='logs/s1-p4runtime-requests.txt')
-        
+                name='s1',
+                address='127.0.0.1:50051',
+                device_id=0,
+                proto_dump_file='logs/s1-p4runtime-requests.txt')
+
         s2 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-            name='s2',
-            address='127.0.0.1:50052',
-            device_id=1,
-            proto_dump_file='logs/s2-p4runtime-requests.txt')
+                name='s2',
+                address='127.0.0.1:50052',
+                device_id=1,
+                proto_dump_file='logs/s2-p4runtime-requests.txt')
 
         s3 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-            name='s3',
-            address='127.0.0.1:50053',
-            device_id=2,
-            proto_dump_file='logs/s3-p4runtime-requests.txt')
+                name='s3',
+                address='127.0.0.1:50053',
+                device_id=2,
+                proto_dump_file='logs/s3-p4runtime-requests.txt')
+
         # Send master arbitration update message to establish this controller as
         # master (required by P4Runtime before performing any other write operation)
         s1.MasterArbitrationUpdate()
@@ -96,26 +142,32 @@ def main(p4info_file_path, bmv2_file_path, runtimeAPI):
 
         # Install the P4 program on the switches
         s1.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
-                                       bmv2_json_file_path=bmv2_file_path)
+                bmv2_json_file_path=bmv2_file_path)
         print "Installed P4 Program using SetForwardingPipelineConfig on s1"
 
         s2.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
-                                       bmv2_json_file_path=bmv2_file_path)
+                bmv2_json_file_path=bmv2_file_path)
         print "Installed P4 Program using SetForwardingPipelineConfig on s2"
 
         s3.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
-                                       bmv2_json_file_path=bmv2_file_path)
+                bmv2_json_file_path=bmv2_file_path)
         print "Installed P4 Program using SetForwardingPipelineConfig on s3"
-	#############################################################################
-	writeIPRules(p4info_helper, ingress_sw=s1, dst_eth_addr="00:00:00:00:01:01", dst_ip="10.0.1.1", mask=32, port=1)
-	writeIPRules(p4info_helper, ingress_sw=s1, dst_eth_addr="00:00:00:03:03:00", dst_ip="10.0.3.3", mask=32, port=2)
-	writeIPRules(p4info_helper, ingress_sw=s2, dst_eth_addr="00:00:00:00:02:02", dst_ip="10.0.2.2", mask=32, port=1)
-	writeIPRules(p4info_helper, ingress_sw=s2, dst_eth_addr="00:00:00:02:03:00", dst_ip="10.0.3.3", mask=32, port=2)
-	writeIPRules(p4info_helper, ingress_sw=s3, dst_eth_addr="00:00:00:00:03:03", dst_ip="10.0.3.3", mask=32, port=1)
-	writeIPRules(p4info_helper, ingress_sw=s3, dst_eth_addr="00:00:00:01:03:00", dst_ip="10.0.1.1", mask=32, port=2)
-	writeIPRules(p4info_helper, ingress_sw=s3, dst_eth_addr="00:00:00:02:03:00", dst_ip="10.0.2.2", mask=32, port=3)
 
-	#############################################################################
+        #############################################################################
+        writeIPRules(p4info_helper, ingress_sw=s1, dst_eth_addr="00:00:00:00:01:01", dst_ip="10.0.1.1", mask=32, port=1)
+        writeIPRules(p4info_helper, ingress_sw=s1, dst_eth_addr="00:00:00:03:03:00", dst_ip="10.0.3.3", mask=32, port=2)
+        writeIPRules(p4info_helper, ingress_sw=s2, dst_eth_addr="00:00:00:00:02:02", dst_ip="10.0.2.2", mask=32, port=1)
+        writeIPRules(p4info_helper, ingress_sw=s2, dst_eth_addr="00:00:00:02:03:00", dst_ip="10.0.3.3", mask=32, port=2)
+        writeIPRules(p4info_helper, ingress_sw=s3, dst_eth_addr="00:00:00:00:03:03", dst_ip="10.0.3.3", mask=32, port=1)
+        writeIPRules(p4info_helper, ingress_sw=s3, dst_eth_addr="00:00:00:01:03:00", dst_ip="10.0.1.1", mask=32, port=2)
+        writeIPRules(p4info_helper, ingress_sw=s3, dst_eth_addr="00:00:00:02:03:00", dst_ip="10.0.2.2", mask=32, port=3)
+
+        writeRecordRules(p4info_helper, ingress_sw=s1, qr_code=1)
+
+        writeHash1Rule(p4info_helper, ingress_sw=s1, srcAddr="10.0.1.1")
+
+        writeLLDPRule(p4info_helper, ingress_sw=s1, srcAddr="00:00:00:00:01:01")
+            #############################################################################
 
         # set meter
         # runtimeAPI.do_meter_array_set_rates("meter_array_set_rates ingress_meter_stats 0.00000128:9000 0.00000128:9000")
@@ -124,6 +176,13 @@ def main(p4info_file_path, bmv2_file_path, runtimeAPI):
         new_rates.append(runtime_CLI.BmMeterRateConfig(0.00000128, 9000))
         new_rates.append(runtime_CLI.BmMeterRateConfig(0.00000128, 9000))
         runtimeAPI.client.bm_meter_array_set_rates(0, meter.name, new_rates)
+
+
+        content = s1.RecvLLDP()
+        if content.WhichOneof('update')=='packet':
+            packet = content.packet.payload
+            pkt = Ether(_pkt=packet)
+            print pkt.show()
 
         m = 0
         total_res_num = 0
@@ -152,7 +211,7 @@ def main(p4info_file_path, bmv2_file_path, runtimeAPI):
                     if t_id > 0:
                         write_register(runtimeAPI, "reg_ingress", i, t_id-1)
                         print "reg[",i,"] = ",t_id-1
-            
+
             # print "2nd res: ",read_register(runtimeAPI, "r_reg", 0)
             # write_register(runtimeAPI, "r_reg", 0, 0) # clean r_reg every minute
             m += 1
@@ -166,7 +225,7 @@ def main(p4info_file_path, bmv2_file_path, runtimeAPI):
 
     ShutdownAllSwitchConnections()
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     # parser = argparse.ArgumentParser(description='P4Runtime Controller')
     parser = runtime_CLI.get_parser()
     parser.add_argument('--p4info', help='p4info proto in text format from p4c',
