@@ -21,6 +21,15 @@ from p4.v1 import p4runtime_pb2
 from p4.v1 import p4runtime_pb2_grpc
 from p4.tmp import p4config_pb2
 
+import six
+from ryu.exception import RyuException
+from ryu.lib.packet import packet, ethernet
+from ryu.lib.packet import lldp, ether_types
+from ryu.ofproto.ether import ETH_TYPE_LLDP
+from ryu.topology.switches import Port, Switch, Link, Host
+from ryu.topology.switches import PortState, PortData, PortDataState
+from ryu.topology.switches import LinkState, HostState, LLDPPacket
+
 MSG_LOG_MAX_LEN = 1024
 
 # List of all active connections
@@ -45,6 +54,8 @@ class SwitchConnection(object):
         self.client_stub = p4runtime_pb2_grpc.P4RuntimeStub(self.channel)
         self.requests_stream = IterableQueue()
         self.stream_msg_resp = self.client_stub.StreamChannel(iter(self.requests_stream))
+        # res = self.client_stub.StreamChannel(p4runtime_pb2.StreamMessageRequest())
+        # print res
         self.proto_dump_file = proto_dump_file
         connections.append(self)
 
@@ -66,8 +77,37 @@ class SwitchConnection(object):
             print "P4Runtime MasterArbitrationUpdate: ", request
         else:
             self.requests_stream.put(request)
+            # print self.stream_msg_resp
             for item in self.stream_msg_resp:
                 return item # just one
+
+    def SendLLDP(self, dry_run=False, **kwargs):
+        request = p4runtime_pb2.StreamMessageRequest()
+        # request.packet.payload = "\000"
+
+        if dry_run:
+            print "P4 Runtime WritePacketOut: ", request
+        else:
+            self.requests_stream.put(request)
+            # stream_msg_resp = self.client_stub.StreamChannel(request)
+            print "hi, in switch"
+            print self.stream_msg_resp
+            
+            for item in self.stream_msg_resp:
+                # print item
+                return item
+    
+    def RecvLLDP(self, dry_run=False, **kwargs):
+        print "wait for packet in..."
+        request = p4runtime_pb2.StreamMessageRequest()
+
+        if dry_run:
+            print "P4 Runtime ReadPacketIn: ", request
+        else:
+            self.requests_stream.put(request)
+            for item in self.stream_msg_resp:
+                return item
+
 
     def SetForwardingPipelineConfig(self, p4info, dry_run=False, **kwargs):
         device_config = self.buildDeviceConfig(**kwargs)
@@ -115,6 +155,18 @@ class SwitchConnection(object):
             for response in self.client_stub.Read(request):
                 yield response
 
+    def WriteCounters(self, counter_entry, dry_run=False):
+        request = p4runtime_pb2.WriteRequest()
+        request.device_id = self.device_id
+        request.election_id.low = 1
+        update = request.updates.add()
+        update.type = p4runtime_pb2.Update.MODIFY
+        update.entity.counter_entry.CopyFrom(counter_entry)
+        if dry_run:
+            print "P4Runtime Write:", request
+        else:
+            self.client_stub.Write(request)
+
     def ReadCounters(self, counter_id=None, index=None, dry_run=False):
         request = p4runtime_pb2.ReadRequest()
         request.device_id = self.device_id
@@ -130,6 +182,26 @@ class SwitchConnection(object):
             print "P4Runtime Read:", request
         else:
             for response in self.client_stub.Read(request):
+                yield response
+
+    def ReadRegisters(self, register_id=None, index=None, dry_run=False):
+        request = p4runtime_pb2.ReadRequest()
+        request.device_id = self.device_id
+        entity = request.entities.add()
+        register_entry = entity.register_entry
+
+        if register_id is not None:
+            register_entry.register_id = register_id
+        else:
+            register_entry.register_id = 0
+        if index is not None:
+            register_entry.index.index = index
+        if dry_run:
+            print "P4Runtime Read:", request
+        else:
+            for response in self.client_stub.Read(request):
+                print "hi"
+                print register_entry 
                 yield response
 
 
@@ -182,3 +254,4 @@ class IterableQueue(Queue):
 
     def close(self):
         self.put(self._sentinel)
+

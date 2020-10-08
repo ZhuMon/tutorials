@@ -31,6 +31,10 @@ you get started with P4 programming, organized into several modules:
 * [Firewall](./exercises/firewall)
 * [Link Monitoring](./exercises/link_monitor)
 
+6. DNS
+* [DNS Server](./exercises/dns_server)
+* [DNS_Amplification](./exercises/dns_amplification)
+
 ## Presentation 
 
 The slides are available [online](http://bit.ly/p4d2-2018-spring) and

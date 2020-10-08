@@ -20,6 +20,7 @@ from p4.config.v1 import p4info_pb2
 
 from convert import encode
 
+
 class P4InfoHelper(object):
     def __init__(self, p4_info_filepath):
         p4info = p4info_pb2.P4Info()
@@ -42,9 +43,11 @@ class P4InfoHelper(object):
                     return o
 
         if name:
-            raise AttributeError("Could not find %r of type %s" % (name, entity_type))
+            raise AttributeError(
+                "Could not find %r of type %s" % (name, entity_type))
         else:
-            raise AttributeError("Could not find id %r of type %s" % (id, entity_type))
+            raise AttributeError(
+                "Could not find id %r of type %s" % (id, entity_type))
 
     def get_id(self, entity_type, name):
         return self.get(entity_type, name=name).preamble.id
@@ -70,7 +73,8 @@ class P4InfoHelper(object):
             primitive = m.group(1)
             return lambda id: self.get_name(primitive, id)
 
-        raise AttributeError("%r object has no attribute %r" % (self.__class__, attr))
+        raise AttributeError("%r object has no attribute %r" %
+                             (self.__class__, attr))
 
     def get_match_field(self, table_name, name=None, id=None):
         for t in self.p4info.tables:
@@ -83,7 +87,8 @@ class P4InfoHelper(object):
                     elif id is not None:
                         if mf.id == id:
                             return mf
-        raise AttributeError("%r has no attribute %r" % (table_name, name if name is not None else id))
+        raise AttributeError("%r has no attribute %r" %
+                             (table_name, name if name is not None else id))
 
     def get_match_field_id(self, table_name, match_field_name):
         return self.get_match_field(table_name, name=match_field_name).id
@@ -142,7 +147,8 @@ class P4InfoHelper(object):
                     elif id is not None:
                         if p.id == id:
                             return p
-        raise AttributeError("action %r has no param %r, (has: %r)" % (action_name, name if name is not None else id, a.params))
+        raise AttributeError("action %r has no param %r, (has: %r)" % (
+            action_name, name if name is not None else id, a.params))
 
     def get_action_param_id(self, action_name, param_name):
         return self.get_action_param(action_name, name=param_name).id
@@ -203,10 +209,45 @@ class P4InfoHelper(object):
         clone_entry = p4runtime_pb2.PacketReplicationEngineEntry()
         clone_entry.clone_session_entry.session_id = clone_session_id
         clone_entry.clone_session_entry.packet_length_bytes = packet_length_bytes
-        clone_entry.clone_session_entry.class_of_service = 0  # PI currently supports only CoS=0 for clone session entry
+        # PI currently supports only CoS=0 for clone session entry
+        clone_entry.clone_session_entry.class_of_service = 0
         for replica in replicas:
             r = p4runtime_pb2.Replica()
             r.egress_port = replica['egress_port']
             r.instance = replica['instance']
             clone_entry.clone_session_entry.replicas.extend([r])
         return clone_entry
+
+    def buildCounterEntry(self, counter_name, index, data):
+        counter_entry = p4runtime_pb2.CounterEntry()
+        counter_entry.counter_id = self.get_counters_id(counter_name)
+        counter_entry_index = p4runtime_pb2.Index()
+        counter_entry_index.index = index
+        counter_entry.index.CopyFrom(counter_entry_index)
+        counter_entry_data = p4runtime_pb2.CounterData()
+        counter_entry_data.packet_count = data
+        counter_entry.data.CopyFrom(counter_entry_data)
+        return counter_entry
+
+    def get_packetout_metadata_pb(self, metadata_name, value):
+        p4info_meta = self.get_packetout_meta("packet_out", metadata_name)
+        p4runtime_metadata = p4runtime_pb2.PacketMetadata()
+        p4runtime_metadata.metadata_id = p4info_meta.id
+        p4runtime_metadata.value = encode(value, p4info_meta.bitwidth)
+        return p4runtime_metadata
+
+    def get_metadata_pb(self, metadata_id, value):
+        p4runtime_metadata = p4runtime_pb2.PacketMetadata()
+        p4runtime_metadata.metadata_id = metadata_id
+        p4runtime_metadata.value = value
+        return p4runtime_metadata
+
+    def buildPacketOut(self, payload, metadata=None):
+        packet_out = p4runtime_pb2.PacketOut()
+        packet_out.payload = payload
+        if metadata:
+            packet_out.metadata.extend([
+                self.get_packetout_metadata_pb(metadata_name, value)
+                for metadata_name, value in metadata.iteritems()
+            ])
+        return packet_out
